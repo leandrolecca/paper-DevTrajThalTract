@@ -1,0 +1,3174 @@
+---
+title: "Thesis - Figures for 2nd and 3rd empirical chapters"
+author: "Lecca-Villacorta, Leandro"
+date:   "18/02/2025"
+---
+
+```{r}
+rm(list=ls(all=TRUE))
+
+basedir <- "/bcbl/home/home_g-m/llecca/soft/paper-DevTrajThalTract"
+source(file.path(basedir,'functions_devtrajthaltract.R'))
+
+libspath <- "/scratch/llecca/R/4.5.1/lib/R/lib-devtract"
+.libPaths(c(libspath, .libPaths()))
+install.envpack <- FALSE
+install.env(install.envpack,libspath=libspath)
+
+figpath <- file.path(basedir,"figures_thesis")
+if (!dir.exists(figpath)){
+  dir.create(figpath)
+} 
+
+# source functions from thalamic gray-matter development
+graythalamicpath <- file.path(basedir,"paper-DevTrajThalamicNuclei")
+source(file.path(graythalamicpath,"functions_devtrajthal.R"))
+
+# contrasts for running type-III Anovas
+options(contrasts = c("contr.sum", "contr.poly"))
+```
+
+```{r}
+load.DATA <- TRUE
+
+if(load.DATA) {
+  load(
+    file = file.path(
+      basedir,
+      "DATA",
+      "data_devtrajtract_parts_nocorrected_ThalNet.RData"
+    )
+  )
+} else {
+    projects <- list(
+      "MATIAS" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "MINI" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "GARUNA" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "BERTSOLARI" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          ),
+          "4.5.2-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "SWAHILI" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          ),
+          "4.5.2-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "TNT" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "DISLEBI" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "EFCS" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "NINOBIL" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      ),
+      "SendyBilit" = list(
+        "rtp-pipeline" = list(
+          "4.5.1-3.0.3" = c(
+            "FO_csv",
+            "Left_HO_csv",
+            "Right_HO_csv"
+          )
+        )
+      )
+    )
+
+    profilesDir <- file.path(basedir,"DATA","profiles")
+    
+    dat <- c()
+    for (pr in names(projects)) {
+        container <- names(projects[[pr]])
+        for (con in container){
+            version <- names(projects[[pr]][[con]])
+            for (ver in version){
+                analysis <- projects[[pr]][[con]][[ver]]
+                for (an in analysis) {
+                    sprintf("Reading %s, %s_%s, analysis %s",pr,con,ver,an)
+                    aux <- readData.V2(
+                      profilesDir,
+                      pr,
+                      con,
+                      ver,
+                      an
+                    )
+                    dat <- rbind(dat,aux)
+                }
+            }
+        }
+    }
+    
+    # Process data
+    dt <- process.data(
+      dat,
+      basedir,
+      "DB_devtraj6.csv",
+      graythalamicpath,
+      "ATLAS_FRAC_def_with_properWT_aseg_WhiteM_CSF_thickness_TBV_def.RData",
+      "None"
+    )
+    
+    save(
+      dat,
+      dt,
+      #dt.macro, 
+      file = file.path(
+        basedir,
+        "DATA",
+        "data_devtrajtract_parts_nocorrected_ThalNet.RData"
+      )
+    )
+}
+```
+
+```{r}
+# get info of the raw data
+raw <- unique(dt[,c("sub","Gender","AGE")])
+nfemale <- nrow(raw[raw$Gender == "Female",])
+mean.age <- mean(raw$AGE)
+sd.age <- sd(raw$AGE)
+min.age <- min(raw$AGE)
+max.age <- max(raw$AGE)
+```
+
+label outliers and then get FO tracts (5) and MD tracts (39) profile 
+without outliers
+
+```{r}
+dt[dt$AGE <= 20, 'agegroup'] <- 'Young' 
+dt[dt$AGE > 20 & dt$AGE <= 60, 'agegroup'] <- 'Adult' 
+dt[dt$AGE > 60, 'agegroup'] <- 'Elder' 
+
+dt$agegroup <- factor(
+  dt$agegroup, 
+  levels = c(
+    "Young",
+    "Adult", 
+    "Elder"
+  )
+)
+
+dt <- dt %>% 
+  arrange(agegroup)
+
+dt$hemagegroup <- factor(
+  paste0(
+    dt$Hemisphere," - ",dt$agegroup,"  "
+  ),
+  levels = c(
+    "Left - Young  ", 
+    "Left - Adult  ", 
+    "Left - Elder  ",
+    "Right - Young  ", 
+    "Right - Adult  ", 
+    "Right - Elder  "
+  )
+)
+
+# factorize categorical variables
+dt$Hemisphere <- as.factor(dt$Hemisphere)
+dt$Gender <- as.factor(dt$Gender)
+
+#-------------------------------------------------------------------------------
+# subjects must have a unique ID. In EFCS we have some with the same ID as MATIAS
+dt[dt$project == "EFCS","sub"] <- sub('S','E',dt[dt$project == "EFCS","sub"])
+
+#-------------------------------------------------------------------------------
+# remove a particular subject with bad tractography for all tracts
+dtclean <- dt[!(dt$sub %in% "SM044"), ]
+# separate between FO and MD nuclei
+dtclean$valmean <- unlist(lapply(dtclean$val,mean))
+dtclean <- dtclean[!is.na(dtclean$valmean),]
+
+# remove groups that aren't identified (tracts that aren't from a specific group)
+dtclean <- dtclean[!is.na(dtclean$fulltractlabel),]
+
+# remove projects that don't have same b. MINI project is multi-shell and SendyBilit
+# has b=800. The rest of the projects are single-shell with b = 1500.
+# but also, GARUNA and NINOBIL have TR=10500, so we delete them because the rest
+# have TR=9300
+dtclean <- dtclean[!(
+  dtclean[["project"]] %in% c(
+    "MINI",
+    "SendyBilit",
+    "GARUNA",
+    "NINOBIL"
+  )
+),]
+
+dt.clean.outliers <- dtclean %>%
+  group_by(Gender,Hemisphere,meas,fulltractlabel) %>%
+  group_modify(~label.outliers(dt=.x, 2.5, 15))
+dt.clean.outliers <- add.grouplabel(dt.clean.outliers)
+
+# get for each FO tract get the mean FA value of the values belonging to a part
+dt.FO.mean.parts <- get.FO.data(
+  dt.clean.outliers, 
+  parts.names = c("1st","2nd","3rd"),
+  clean.outliers = TRUE
+)
+```
+
+```{r}
+# get info of the clean data
+clean <- subset(dt.clean.outliers, outlier == FALSE)
+clean <- as.data.frame(unique(clean[,c("sub","Gender","AGE","project")]))
+nfemale <- nrow(clean[clean$Gender == "Female",])
+mean.age <- mean(clean$AGE)
+sd.age <- sd(clean$AGE)
+min.age <- min(clean$AGE)
+max.age <- max(clean$AGE)
+
+# MINI is the only project that had reverse phase encoding direction and the remainig
+# nope
+MINI <- clean[clean$project == "MINI",]
+nfemale.MINI <- nrow(MINI[MINI$Gender == "Female",])
+mean.age.MINI <- mean(MINI$AGE)
+sd.age.MINI <- sd(MINI$AGE)
+min.age.MINI <- min(MINI$AGE)
+max.age.MINI <- max(MINI$AGE)
+
+no.MINI <- clean[!clean$project == "MINI",]
+nfemale.noMINI <- nrow(no.MINI[no.MINI$Gender == "Female",])
+mean.age.no.MINI <- mean(no.MINI$AGE)
+sd.age.no.MINI <- sd(no.MINI$AGE)
+min.age.no.MINI <- min(no.MINI$AGE)
+max.age.no.MINI <- max(no.MINI$AGE)
+```
+
+get tractmean for FO, mPFC, dPFC, OrbPoPFC, and IFC  groups,
+and then label outliers for plotting (I'll only plot average of MD-group tracts,
+i.e., mPFC, dPFC, OrbPoPFC, and IFC)
+
+```{r}
+TCKS <- unique(dtclean$fulltractlabel)
+TCKS.FO <- TCKS[TCKS %in% FO.labels]
+TCKS.MD <- TCKS[TCKS %in% MD.labels]
+
+metric <- "fa"
+ylabel <- "FA"
+
+# get the average for each bundle group from the preprocessed dt with outliers
+# labeled: dt.clean.outliers dataframe
+dt.clean.avgvector <- subset(dt.clean.outliers, meas == "fa") %>%
+    group_by_at(
+      c(
+        "sub",
+        "project",
+        "group",
+        "AGE",
+        "meas",
+        "ses",
+        "agegroup",
+        "Hemisphere",
+        "Gender"
+      )
+    ) %>%
+    group_modify(~average.col.list(.x))
+dt.clean.avgvector <- as.data.frame(dt.clean.avgvector)
+
+# label the FA outliers after obtaining the profile mean for each tract group
+dt.clean.avgvector.outliers <- dt.clean.avgvector %>%
+  group_by(Gender,Hemisphere,meas,group) %>%
+  group_modify(~label.outliers(dt=.x, 2.5, 15,"avgvector"))
+dt.clean.avgvector.outliers <- as.data.frame(dt.clean.avgvector.outliers)
+
+
+outlier_subs <- dt.clean.avgvector.outliers %>%
+    filter(outlier == TRUE) %>%
+    select(group, sub, meas)  
+
+# AND REMOVE subs that were detected as outlier in the avg for each group, 
+# because are not gonna be included anymore
+dt.clean.filtered <- dt.clean.outliers %>%
+    anti_join(outlier_subs, by = c("group", "sub", "meas"))
+
+
+# get MD tracts (i.e., those that are not FO)
+
+dt.clean.MDgroups.no.outliers <- dt.clean.filtered[
+  !(dt.clean.filtered$fulltractlabel %in% TCKS.FO) &
+    dt.clean.filtered$meas == "fa",
+]
+dt.clean.MDgroups.no.outliers$outlier <- FALSE
+
+# get for each MD tract get the mean FA value of the values belonging to a part
+dt.MD.mean.parts <- get.MD.data2(
+  dt.clean.MDgroups.no.outliers, 
+  parts.names = c("1st","2nd","3rd"),
+  clean.outliers = TRUE
+)
+
+data.mean.MD <- dt.MD.mean.parts %>%
+    group_by_at(c("part",
+                  "agegroup",
+                  "PFCgroup",
+                  "Hemisphere",
+                  "Gender",
+                  "meas",
+                  "sub",
+                  "project")) %>%
+    summarise_at(vars("value"), list("value" = mean))
+
+# Remove subjects that do not have both hemispheres for every tract
+data.mean.MD <- data.mean.MD %>%
+  group_by(sub, PFCgroup, meas) %>%
+  filter(all(c("Left", "Right") %in% Hemisphere)) %>%
+  ungroup()
+
+data.mean.MD <- as.data.frame(data.mean.MD)
+```
+
+Table 2
+
+Perform ANOVA on the linear mixed effects model of the FO bundles
+
+Multi-Way Mixed Factorial ANOVA with two fully crossed factors 
+(i.e., within-subjects: Part and Hemisphere) and two nested factors
+(i.e., between-subjects: Age group & Gender)
+
+Build anova tables
+
+```{r}
+################################################################################
+analysis_results.FO <- run_aov_analysis(
+  data = dt.FO.mean.parts[
+    dt.FO.mean.parts[["meas"]] == "fa" & 
+    dt.FO.mean.parts[["outlier"]] == FALSE,
+  ],
+  group = 'tractlabel',
+  dependent_variable = "value",
+  fixed_effects = "agegroup * Gender * part * Hemisphere",
+  random_effects = "(1  | sub)+ (1|part:sub) + (1|Hemisphere:sub)",
+  bonferroni_comparisons = 9
+)
+
+# run anova for the MD
+analysis_results.MD <- run_aov_analysis(
+  data = data.mean.MD[data.mean.MD[["meas"]] == "fa",],
+  group = 'PFCgroup',
+  dependent_variable = "value",
+  fixed_effects = "agegroup * Gender * part * Hemisphere",
+  random_effects = "(1  | sub)+ (1|part:sub) + (1|Hemisphere:sub)",
+  bonferroni_comparisons = 9
+)
+
+################################################################################
+analysis_results.all <- append(analysis_results.FO, analysis_results.MD)
+################################################################################
+desired_order <- c(
+  "agegroup",
+  "part",
+  "Gender",
+  "Hemisphere",
+  "agegroup:part",
+  "part:Hemisphere",
+  "Gender:part",
+  "agegroup:Hemisphere",
+  "agegroup:Gender",
+  "Gender:Hemisphere", 
+  "agegroup:Gender:part", 
+  "agegroup:Gender:Hemisphere",
+  "agegroup:part:Hemisphere",
+  "Gender:part:Hemisphere", 
+  "agegroup:Gender:part:Hemisphere" 
+)
+
+# replace effects names values
+effects_names <- c(
+  "Age group",
+  "Section",
+  "Gender",
+  "Hemisphere",
+  "Section by Age group",
+  "Section by Hemisphere",
+  "Section by Gender",
+  "Age group by Hemisphere",
+  "Age group by Gender",
+  "Gender by Hemisphere",
+  "Age group by Gender by Section",
+  "Age group by Gender by Hemisphere",
+  "Age group by Section by Hemisphere",
+  "Gender by Section by Hemisphere",
+  "Age group by Gender by Section by Hemisphere"
+)
+
+anova_tracts_fulltable <- build_anova_table(
+  anova.results = analysis_results.all, 
+  elements = names(analysis_results.all),
+  threshold = 0.05/9,
+  desired.order = desired_order,
+  effects_names = effects_names
+)
+
+# Create a Word document and add the table
+doc <- read_docx() %>%
+  body_add_flextable(anova_tracts_fulltable) %>%
+  body_add_par(" ")  # Add space after table
+
+# Save the Word file
+print(
+  doc, 
+  target = file.path(
+    figpath,
+    "anova_results.docx"
+  )
+)
+
+# tract_names <- names(analysis_results)
+# # Function to format F and P values together
+# format_f_p <- function(f_value, p_value) {
+#   paste0(f_value, "\n", p_value)
+# }
+# 
+# # Process each tract's results
+# formatted_results <- lapply(tract_names, function(tract) {
+#   df <- analysis_results[[tract]]$anova.stats.table  # Extract the tract's dataframe
+#   df %>%
+#     mutate(!!tract := format_f_p(`F-value`, `P-value`)) %>%  # Format F and P values together
+#     select(Effects, !!tract)  # Keep only Effects and formatted values
+# })
+# 
+# # Merge all tract data into one wide-format table
+# anova_wide <- Reduce(
+#   function(df1, df2) full_join(df1, df2, by = "Effects"), 
+#   formatted_results
+# )
+# 
+# # Replace "\n" with actual line breaks in all columns except "Effects"
+# anova_wide <- anova_wide %>%
+#   mutate(across(-Effects, ~ gsub("\\\\n", "\n", .))) 
+
+# # Specify the desired order for the Effects column
+# desired_order <- c(
+#   "agegroup",
+#   "part",
+#   "Gender",
+#   "Hemisphere",
+#   "agegroup:part",
+#   "part:Hemisphere",
+#   "Gender:part",
+#   "agegroup:Hemisphere",
+#   "agegroup:Gender",
+#   "Gender:Hemisphere", 
+#   "agegroup:Gender:part", 
+#   "agegroup:Gender:Hemisphere",
+#   "agegroup:part:Hemisphere",
+#   "Gender:part:Hemisphere", 
+#   "agegroup:Gender:part:Hemisphere" 
+# )
+# 
+# # Reorder the "Effects" column according to the desired order
+# anova_wide <- anova_wide %>%
+#   mutate(Effects = factor(Effects, levels = desired_order)) %>%
+#   arrange(Effects)  # Arrange rows based on the new factor levels
+# 
+# # View final table
+# print(anova_wide)
+
+# ################################################################################
+# # Put the p-values in a dataframe and reorder them according to the effects vector
+# p_values_df <- lapply(tract_names, function(tract) {
+#   df <- analysis_results[[tract]]$anova.table  # Extract the tract's dataframe
+#   df %>%
+#     mutate(!!tract := `Pr..F.`) %>%  # Format F and P values together
+#     select(effects, !!tract)  # Keep only Effects and formatted values
+# })
+# 
+# # Combine all p-values into one data frame, joining by the 'Effects' column
+# p_values_df <- Reduce(function(x, y) {
+#   left_join(x, y, by = "effects")  # Join by 'Effects' to merge the results
+# }, p_values_df)
+# 
+# # Reorder the "Effects" column according to the desired order
+# p_values_df <- p_values_df %>%
+#   mutate(effects = factor(effects, levels = desired_order)) %>%
+#   arrange(effects)  # Arrange rows based on the new factor levels
+# 
+# # now color the background
+# # Create a continuous color scale based on the p-values
+# threshold <- 0.05/9
+# 
+# 
+# # Function to apply background color based on p-value
+# apply_background_color <- function(p_value) {
+#   color_scale(p_value) # Use the continuous color scale
+# }
+
+# # replace effects names values
+# effects_names <- c(
+#   "Age group",
+#   "Section",
+#   "Gender",
+#   "Hemisphere",
+#   "Section by Age group",
+#   "Section by Hemisphere",
+#   "Section by Gender",
+#   "Age group by Hemisphere",
+#   "Age group by Gender",
+#   "Gender by Hemisphere",
+#   "Age group by Gender by Section",
+#   "Age group by Gender by Hemisphere",
+#   "Age group by Section by Hemisphere",
+#   "Gender by Section by Hemisphere",
+#   "Age group by Gender by Section by Hemisphere"
+# )
+# 
+# anova_wide$Effects <- effects_names
+
+# ################################################################################
+# # Convert data to a flextable
+# # 2. Apply the background color to the flextable based on p_values_df
+# 
+# 
+# # print into a word formart
+# # Convert to a flextable
+# anova_flextable <- anova_wide %>%
+#   flextable() %>%
+#   autofit()  # Adjust column sizes automatically
+# 
+# anova_flextable <- bg(
+#   anova_flextable,
+#   j = names(anova_wide[2:ncol(anova_wide)]),
+#   bg = 
+# sapply(p_values_df[,2:ncol(anova_wide)], apply_background_color), 
+#   part = "body"
+#   )
+# 
+# # Set column widths (in centimeters)
+# anova_flextable <- anova_flextable %>%
+#   flextable::set_table_properties(
+#     width = 0.95, # here convert 3.16 cm to inches 
+#     layout = "autofit"
+#   )
+# 
+# # Create a Word document and add the table
+# doc <- read_docx() %>%
+#   body_add_flextable(anova_flextable) %>%
+#   body_add_par(" ")  # Add space after table
+# 
+# # Save the Word file
+# print(doc, target = file.path(figpath,"anova_results.docx"))
+
+
+################################################################################
+# # checks with other functions ezANOVA(), and aov_car(),
+# library(ez, lib.loc = libspath)
+# aov2 <- ezANOVA(data = subset(
+#         data.commonID, 
+#         meas == "fa" & outlier == FALSE & tractlabel %in% "OR"
+#       ), 
+#     dv = .(value),
+#     wid = .(sub),
+#     between = .(agegroup,Gender),
+#     within = .(part, Hemisphere),
+#     detailed = TRUE,
+#     type = 3
+# )
+# 
+# library(afex)
+# aov3 <- afex::aov_car(
+#   value ~ agegroup*Gender*part*Hemisphere + Error(sub/(part*Hemisphere)), 
+#   data = subset(
+#     data.commonID, 
+#     meas == "fa" & outlier == FALSE & tractlabel %in% "OR"
+#   )
+# )
+
+```
+
+get also tractprofile mean for each agegroup and the global average of all the participants
+```{r}
+#===============================================================================
+# Get overall profile mean (the line in red)
+#===============================================================================
+var.groups <- c("Hemisphere","meas","fulltractlabel","tractlabel")
+dt.clean.mean.sd <- dt.clean.outliers %>%
+  group_by_at(var.groups) %>%
+  group_modify(~get.profile.mean.sd(dt=.x))
+dt.clean.mean.sd <- as.data.frame(dt.clean.mean.sd)
+dt.clean.mean.sd <- add.grouplabel(dt.clean.mean.sd)
+
+#===============================================================================
+# Get profile mean for each agegroup (the lines in color)
+#===============================================================================
+dt.clean.mean.sd.agegroup <- subset(dt.clean.outliers, outlier == FALSE) %>%
+  group_by_at(c(var.groups,"agegroup")) %>%
+  group_modify(~get.profile.mean.sd(dt=.x))
+dt.clean.mean.sd.agegroup <- as.data.frame(dt.clean.mean.sd.agegroup)
+dt.clean.mean.sd.agegroup <- add.grouplabel(dt.clean.mean.sd.agegroup)
+
+#===============================================================================
+# Get overall profile mean and SD bands for each tract group
+#===============================================================================
+dt.clean.avgvector.mean.sd <- dt.clean.avgvector.outliers %>%
+  group_by_at(c("Hemisphere","meas","group")) %>%
+  group_modify(~get.profile.mean.sd(dt=.x,y="avgvector"))
+dt.clean.avgvector.mean.sd <- as.data.frame(dt.clean.avgvector.mean.sd)
+dt.clean.avgvector.mean.sd$group <- 
+  factor(dt.clean.avgvector.mean.sd$group, 
+         levels = c("FO","dPFC","mPFC","IFC","OrbPoPFC"))
+
+#===============================================================================
+# once we have calculated the mean and SD bands for each tract group (the 
+# ones to detect outliers), I have to remove outliers labeled before and get 
+# individuals with FA profiles of both hemispheres
+#===============================================================================
+dt.clean.avgvector.no.outliers <- dt.clean.avgvector.outliers %>%
+    filter(outlier == FALSE) %>%  # First, remove outliers
+    group_by(sub, group, meas) %>%
+    filter(all(c("Left", "Right") %in% Hemisphere)) %>%  # Then check for both hemispheres
+    ungroup()
+dt.clean.avgvector.no.outliers <- as.data.frame(dt.clean.avgvector.no.outliers)
+
+#===============================================================================
+# Get profile mean for each agegroup for the mean 4 groups in MD (the lines in color)
+#===============================================================================
+dt.clean.avgvector.mean.sd.agegroup <- subset(
+  dt.clean.avgvector.no.outliers, 
+  outlier == FALSE
+) %>%
+  group_by_at(c("Hemisphere","meas","group","agegroup")) %>%
+  group_modify(~get.profile.mean.sd(dt=.x,y="avgvector"))
+dt.clean.avgvector.mean.sd.agegroup <- as.data.frame(dt.clean.avgvector.mean.sd.agegroup)
+# dt.clean.avgvector.mean.sd.agegroup$group <- 
+#   factor(dt.clean.avgvector.mean.sd.agegroup$group, 
+#          levels = c("FO","dPFC","mPFC","IFC","OrbPoPFC"))
+```
+
+Plot here the FA profiles
+
+```{r}
+#-------------------------------------------------------------------------------
+# clean and with averages
+#-------------------------------------------------------------------------------
+plt.FO.FA.clean <- plt.profiles.V6(
+  subset(
+    dt.clean.outliers,
+    group == "FO" & 
+    outlier == FALSE
+  ) %>% 
+    mutate(tractlabel = factor(tractlabel, levels = FO.tracts)),
+  group = "fulltractlabel",
+  TCKS.FO,
+  metric,
+  "001",
+  ylabel,
+  "val",
+  "FO",
+  dt.mean.sd2 = subset(
+    dt.clean.mean.sd.agegroup,
+    group == "FO"
+  ) %>% 
+    mutate(tractlabel = factor(tractlabel, levels = FO.tracts)),
+  suffix = "testing15percentage_clean",
+  facet.formula = "tractlabel ~ Hemisphere",
+  ncol = 2
+  )
+
+plt.MD.FA.clean <- plt.profiles.V6(
+  dtclean = subset(
+    dt.clean.avgvector.no.outliers,
+    outlier == FALSE
+  ),
+  group = "group",
+  groups = c("dPFC", "mPFC", "IFC", "OrbPoPFC"),
+  metric = metric,
+  ses = "001",
+  ylabel = ylabel,
+  y = "avgvector",
+  tracts = "MD",
+  dt.mean.sd2 = dt.clean.avgvector.mean.sd.agegroup,
+  suffix = "15percentage_clean_avg_groups",
+  facet.formula = "group ~ Hemisphere",
+  ncol = 2
+)
+
+figure <- ggarrange(
+    plt.FO.FA.clean, 
+    plt.MD.FA.clean,
+    labels = c("A", "B"),
+    font.label = list(color="black",size=36),
+    ncol = 2, nrow = 1,
+    common.legend = TRUE,
+    legend = "right"
+)
+
+ncol <- 4
+ggsave(
+  file = file.path(
+    figpath,
+    "fig_TractProfiles_avg_agegroup_clean"
+  ),
+  height = 3.5*max(
+    length(unique(dt.FO.mean.parts[,"tractlabel"])),
+    length(unique(dt.MD.mean.parts[,"PFCgroup"]))),# 3.5 height each plot 
+  width = ncol*5+4,# 5 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 1100,
+  device = "png",
+  figure
+)           
+
+```
+
+Plot developmental patterns
+
+```{r}
+
+mypal <- rev(wes_palette("Rushmore1", n = 5))[2:3]
+mypal <- c(wes_palette("Darjeeling1", n = 1),mypal)
+
+#-------------------------------------------------------------------------------
+# WM bundles associated with First Order nuclei
+#-------------------------------------------------------------------------------
+
+# plot interaction lines
+#-------------------------------------------------------------------------------
+plt.twoway.agegroup.section.lines.FO <- double.interaction.lines(
+  dt.FO.mean.parts,
+  metric = "fa",
+  compare = "agegroup",
+  group = "tractlabel",
+  palette =  mypal,
+  facet.formula = "tractlabel ~ .",#"tractlabel ~ .",#". ~ tractlabel",
+  x = "part",
+  y = "value",
+  ylab = "FA",
+  xlab = "Section",
+  legend.title = "Age\ngroup      ",
+  x.levels = c("1st", "2nd", "3rd"),
+  text.size = 30,
+  hide.facet.titles = TRUE,
+  dummy.facet.x = TRUE#,
+  # hide.x.axis = TRUE
+) 
+
+ymax <- round(
+  max(
+    dt.FO.mean.parts[dt.FO.mean.parts$meas == "fa","value"]
+  ),
+  digits=1
+)
+ymin <- round(
+  min(
+    dt.FO.mean.parts[dt.FO.mean.parts$meas == "fa","value"]
+  ),
+  digits=1
+)
+
+plt.twoway.agegroup.section.lines.FO <- plt.twoway.agegroup.section.lines.FO + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(ymin, 0.95),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  ) 
+
+# plot boxplots
+#-------------------------------------------------------------------------------
+plt.agegroup.section.FO <- double.interaction.nopaired(
+  x = "part", 
+  y = "value", 
+  group = "tractlabel", 
+  groups = FO.tracts,
+  compare = "agegroup",
+  # comparison_order = c(
+  #   "Young-Adult",
+  #   "Adult-Elder",
+  #   "Young-Elder"
+  # ),
+  legend.title = "Age\ngroup      ",
+  text.size = 30,#26 
+  stats.size = 6.5,
+  palette = mypal,
+  data = dt.FO.mean.parts,
+  facet.formula = "tractlabel ~ .",#"tractlabel ~ .",#". ~ tractlabel",
+  hide.facet.titles = FALSE,
+  hide.y.axis = TRUE,
+  dummy.facet.x = TRUE
+  # figpath = figpath,
+  # identifier = "FO_FA_dev_patterns",
+  # height = 5,
+  # width = 5*length(unique(dt.FO.mean.parts[,"tractlabel"])) + 4
+)
+
+
+plt.agegroup.section.FO <- plt.agegroup.section.FO + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(ymin, 0.95),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  )
+
+
+#-------------------------------------------------------------------------------
+# WM bundles associated with Mediodorsal nucleus
+#-------------------------------------------------------------------------------
+
+# plot interaction lines
+#-------------------------------------------------------------------------------
+plt.twoway.agegroup.section.lines.MD <- double.interaction.lines(
+  data.mean.MD,#dt.MD.mean.parts,
+  metric = "fa",
+  compare = "agegroup",
+  group = "PFCgroup",
+  palette =  mypal,
+  facet.formula = "PFCgroup ~ .",#"tractlabel ~ .",#". ~ tractlabel",
+  x = "part",
+  y = "value",
+  ylab = "FA",
+  xlab = "Section",
+  legend.title = "Age\ngroup      ",
+  x.levels = c("1st", "2nd", "3rd"),
+  text.size = 30,
+  hide.facet.titles = TRUE,
+  dummy.facet.x = TRUE#,
+  # hide.x.axis = TRUE
+) 
+
+ymax <- ceiling(
+  max(
+    data.mean.MD[data.mean.MD$meas == "fa","value"]
+  )*10
+)/10
+
+ymin <- round(
+  min(
+    data.mean.MD[data.mean.MD$meas == "fa","value"]
+  ),
+  digits=1
+)
+
+plt.twoway.agegroup.section.lines.MD <- plt.twoway.agegroup.section.lines.MD + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(
+      min(data.mean.MD[data.mean.MD$meas == "fa","value"]), 
+      0.755
+    ),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  ) 
+
+# plot boxplots
+#-------------------------------------------------------------------------------
+plt.agegroup.section.MD <- double.interaction.nopaired(
+  x = "part", 
+  y = "value", 
+  group = "PFCgroup", 
+  groups = c("dPFC","mPFC","IFC","OrbPoPFC"),
+  compare = "agegroup",
+  legend.title = "Age\ngroup      ",
+  text.size = 30,#26 
+  stats.size = 6.5,
+  palette = mypal,
+  data = data.mean.MD,
+  facet.formula = "PFCgroup ~ .",#"tractlabel ~ .",#". ~ tractlabel",
+  hide.facet.titles = FALSE,
+  hide.y.axis = TRUE,
+  dummy.facet.x = TRUE
+  # figpath = figpath,
+  # identifier = "FO_FA_dev_patterns",
+  # height = 5,
+  # width = 5*length(unique(dt.FO.mean.parts[,"tractlabel"])) + 4
+)
+
+plt.agegroup.section.MD <- plt.agegroup.section.MD + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(
+      min(data.mean.MD[data.mean.MD$meas == "fa","value"]), 
+      0.755
+    ),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  )
+
+# save the figure
+#-------------------------------------------------------------------------------
+# big plot
+ncol <- 4
+pltt <-  
+  ggarrange(
+    plt.twoway.agegroup.section.lines.FO,
+    NULL,
+    plt.agegroup.section.FO,
+    NULL,
+    plt.twoway.agegroup.section.lines.MD,
+    NULL,
+    plt.agegroup.section.MD,
+    align = "h",
+    labels = c(
+      "A1", 
+      "", 
+      "A2", 
+      "", 
+      "B1", 
+      "", 
+      "B2"
+    ),  # Add labels
+    label.x = -0.05, 
+    font.label = list(color="black",size=36),
+    ncol = ncol+3, 
+    nrow = 1,
+    widths = c(0.75, 0.05, 1, 0.1, 0.75, 0.05, 1),
+    common.legend = TRUE,
+    legend = "right"
+  )
+
+ggsave(
+  file = file.path(
+    figpath,
+    "developmental_patterns_across_sections"
+  ),
+  height = 5*max(
+    length(unique(dt.FO.mean.parts[,"tractlabel"])),
+    length(unique(dt.MD.mean.parts[,"PFCgroup"])))+5*0.15,# 4 each plot 
+  width = 5.75*ncol+ 4 ,# 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 850,
+  device = "png",
+ pltt
+)
+```
+
+
+Plot gender interactions with part
+
+```{r}
+#-------------------------------------------------------------------------------
+# WM bundles associated with First Order nuclei
+#-------------------------------------------------------------------------------
+
+# plot interaction lines
+#-------------------------------------------------------------------------------
+plt.twoway.gender.section.lines.FO <- double.interaction.lines(
+  dt.FO.mean.parts,
+  metric = "fa",
+  compare = "Gender",
+  group = "tractlabel",
+  x = "part",
+  y = "value",
+  ylab = "FA",
+  xlab = "Section",
+  legend.title = "Biological\nsex             ",#"Biological\nsex             ",
+  x.levels = c("1st", "2nd", "3rd"),
+  text.size = 30,
+  hide.facet.titles = TRUE,
+  dummy.facet.x = TRUE
+) 
+
+# set the limits
+#-------------------------------------------------------------------------------
+ymax <- round(
+  max(
+    dt.FO.mean.parts[dt.FO.mean.parts$meas == "fa","value"]
+  ),
+  digits=1
+)
+ymin <- round(
+  min(
+    dt.FO.mean.parts[dt.FO.mean.parts$meas == "fa","value"]
+  ),
+  digits=1
+)
+
+plt.twoway.gender.section.lines.FO <- plt.twoway.gender.section.lines.FO + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(ymin, 0.825),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  ) 
+
+# plot boxplots
+#-------------------------------------------------------------------------------
+plt.twoway.gender.section.FO <- double.interaction.nopaired(
+  data = dt.FO.mean.parts,
+  x = "part", 
+  y = "value", 
+  group = "tractlabel", 
+  groups = FO.tracts,
+  compare = "Gender",
+  legend.title = "Biological\nsex             ",
+  text.size = 30,#26 
+  stats.size = 6.5,
+  facet.formula = "tractlabel ~ .",
+  hide.y.axis = TRUE,
+  dummy.facet.x = TRUE
+)
+
+# set the limits
+#-------------------------------------------------------------------------------
+plt.twoway.gender.section.FO <- plt.twoway.gender.section.FO + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(ymin, 0.825),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  ) 
+
+
+#-------------------------------------------------------------------------------
+# WM bundles associated with Mediodorsal nucleus
+#-------------------------------------------------------------------------------
+
+# plot interaction lines
+#-------------------------------------------------------------------------------
+plt.twoway.gender.section.lines.MD <- double.interaction.lines(
+  data = dt.MD.mean.parts,
+  metric = "fa",
+  compare = "Gender",
+  group = "PFCgroup",
+  x = "part",
+  y = "value",
+  ylab = "FA",
+  xlab = "Section",
+  legend.title = "Biological\nsex             ",#"Biological\nsex             ",
+  x.levels = c("1st", "2nd", "3rd"),
+  text.size = 30,
+  hide.facet.titles = TRUE,
+  dummy.facet.x = TRUE
+)
+
+# set the limits
+#-------------------------------------------------------------------------------
+
+ymax <- ceiling(
+  max(
+    data.mean.MD[data.mean.MD$meas == "fa","value"]
+  )*10
+)/10
+
+ymin <- round(
+  min(
+    data.mean.MD[data.mean.MD$meas == "fa","value"]
+  ),
+  digits=1
+)
+
+plt.twoway.gender.section.lines.MD <- plt.twoway.gender.section.lines.MD + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(
+      min(data.mean.MD[data.mean.MD$meas == "fa","value"]), 
+      0.7
+    ),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  ) 
+
+# plot boxplots
+#-------------------------------------------------------------------------------
+plt.twoway.gender.section.MD <- double.interaction.nopaired(
+  data = dt.MD.mean.parts,
+  x = "part", 
+  y = "value", 
+  group = "PFCgroup", 
+  groups = c("dPFC","mPFC","IFC","OrbPoPFC"),
+  compare = "Gender",
+  legend.title = "Biological\nsex             ",#"Biological\nsex             ",
+  text.size = 30,
+  stats.size = 6.5,
+  hide.y.axis = TRUE,
+  dummy.facet.x = TRUE
+)
+
+# set the limits
+#-------------------------------------------------------------------------------
+plt.twoway.gender.section.MD <- plt.twoway.gender.section.MD + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(
+      min(data.mean.MD[data.mean.MD$meas == "fa","value"]), 
+      0.7
+    ),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  )
+
+# save the figure
+#-------------------------------------------------------------------------------
+# big plot
+ncol <- 4
+pltt <-  
+  ggarrange(
+    plt.twoway.gender.section.lines.FO,
+    NULL,
+    plt.twoway.gender.section.FO,
+    NULL,
+    plt.twoway.gender.section.lines.MD,
+    NULL,
+    plt.twoway.gender.section.MD,
+    align = "h",
+    labels = c(
+      "A1", 
+      "", 
+      "A2", 
+      "", 
+      "B1", 
+      "", 
+      "B2"
+    ),  # Add labels
+    label.x = -0.05,
+    font.label = list(color="black",size=36),
+    ncol = ncol+3, 
+    nrow = 1,
+    widths = c(0.75, 0.05, 1, 0.1, 0.75, 0.05, 1),
+    common.legend = TRUE,
+    legend = "right"
+  )
+
+ggsave(
+  file = file.path(
+    figpath,
+    "biologicalsex_section_interactions"
+  ),
+  height = 5*max(
+    length(unique(dt.FO.mean.parts[,"tractlabel"])),
+    length(unique(dt.MD.mean.parts[,"PFCgroup"])))+5*0.15,# 4 each plot 
+  width = 5.75*ncol+ 4 ,# 4 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 850,
+  device = "png",
+ pltt
+)
+
+```
+
+Plot hemispheric interactions
+
+```{r}
+#-------------------------------------------------------------------------------
+# WM bundles associated with First Order nuclei
+#-------------------------------------------------------------------------------
+
+# plot interaction lines
+#-------------------------------------------------------------------------------
+plt.twoway.section.hem.lines.FO <- double.interaction.lines(
+  dt.FO.mean.parts,
+  metric = "fa",
+  compare = "Hemisphere",
+  group = "tractlabel",
+  x = "part",
+  y = "value",
+  ylab = "FA",
+  xlab = "Section",
+  legend.title = "Hemisphere  ",
+  x.levels = c("1st", "2nd", "3rd"),
+  text.size = 30,
+  hide.facet.titles = TRUE,
+  dummy.facet.x = TRUE
+)
+
+# set the limits
+#-------------------------------------------------------------------------------
+ymax <- round(
+  max(
+    dt.FO.mean.parts[dt.FO.mean.parts$meas == "fa","value"]
+  ),
+  digits=1
+)
+ymin <- round(
+  min(
+    dt.FO.mean.parts[dt.FO.mean.parts$meas == "fa","value"]
+  ),
+  digits=1
+)
+
+plt.twoway.section.hem.lines.FO <- plt.twoway.section.hem.lines.FO + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(ymin, 0.835),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  ) 
+
+# plot boxplots
+#-------------------------------------------------------------------------------
+plt.twoway.sec.hem.FO <- double.interaction.pro(
+  data = dt.FO.mean.parts,
+  x = "part", 
+  y = "value", 
+  group = "tractlabel", 
+  groups = FO.tracts,
+  compare = "Hemisphere",
+  ID = "sub",
+  legend.title = "Hemisphere  ",
+  text.size = 30,
+  stats.size = 6.5,
+  paired = TRUE,
+  hide.y.axis = TRUE,
+  show.axes = "x",
+  dummy.facet.x = TRUE,
+  switch.facet.x = TRUE,
+  xlabel = "Section"
+)
+
+# set the limits
+#-------------------------------------------------------------------------------
+plt.twoway.sec.hem.FO <- plt.twoway.sec.hem.FO + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(ymin, 0.835),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  ) 
+
+#-------------------------------------------------------------------------------
+# WM bundles associated with Mediodorsal nucleus
+#-------------------------------------------------------------------------------
+
+# plot interaction lines
+#-------------------------------------------------------------------------------
+plt.twoway.section.hem.lines.MD <- double.interaction.lines(
+  dt.MD.mean.parts,
+  metric = "fa",
+  compare = "Hemisphere",
+  group = "PFCgroup",
+  x = "part",
+  y = "value",
+  ylab = "FA",
+  xlab = "Section",
+  legend.title = "Hemisphere  ",
+  x.levels = c("1st", "2nd", "3rd"),
+  text.size = 30,
+  hide.facet.titles = TRUE,
+  dummy.facet.x = TRUE
+)
+
+# set the limits
+#-------------------------------------------------------------------------------
+ymax <- ceiling(
+  max(
+    data.mean.MD[data.mean.MD$meas == "fa","value"]
+  )*10
+)/10
+
+ymin <- round(
+  min(
+    data.mean.MD[data.mean.MD$meas == "fa","value"]
+  ),
+  digits=1
+)
+
+plt.twoway.section.hem.lines.MD <- plt.twoway.section.hem.lines.MD + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(
+      min(data.mean.MD[data.mean.MD$meas == "fa","value"]), 
+      ymax
+    ),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  ) 
+
+# plot boxplots
+#-------------------------------------------------------------------------------
+plt.twoway.sec.hem.MD <- double.interaction.pro(
+  data = dt.MD.mean.parts,
+  x = "part", 
+  y = "value", 
+  group = "PFCgroup", 
+  groups = c("dPFC","mPFC","IFC","OrbPoPFC"),
+  compare = "Hemisphere",
+  ID = "sub",
+  legend.title = "Hemisphere  ",
+  text.size = 30,
+  stats.size = 6.5,
+  paired = TRUE,
+  hide.y.axis = TRUE,
+  show.axes = "x",
+  dummy.facet.x = TRUE,
+  switch.facet.x = TRUE,
+  xlabel = "Section"
+)
+
+# plt.twoway.sec.hem.MD<-plt.twoway.sec.hem.MD+
+#   theme(
+#     panel.spacing.x = unit(0, "lines"),
+#     panel.spacing.y = unit(0.83, "lines")
+#   )
+
+# p2<-plt.twoway.sec.hem.MD +
+#   facet_grid2(
+#         as.formula(
+#           paste0("PFCgroup ~ part")
+#         ),#fulltractlabel ~ Gender + Hemisphere,
+#         axes = "x", 
+#         remove_labels = "all",
+#         scales = "free",switch="x") +
+#   labs(title = "dummy",x = "Section")+
+# theme(plot.title = element_text(hjust = 0.5, size = 30+6, color = "white"),
+#       axis.text.x = element_blank(),#element_text(size=0,color="white"),
+#       axis.ticks.x = element_blank(),
+#       axis.title.x = element_text(family = "sans",size = 30),
+#       strip.placement = "outside",
+#       strip.text.x = element_text(family = "sans",size = 30-4, color = "grey30",
+#                                   margin = margin(t = 0, b = 0)),
+#       panel.spacing.x = unit(0, "lines"),
+#       panel.spacing.y = unit(0.835, "lines")) 
+# plt.twoway.sec.hem.MD<-p2
+
+
+# set the limits
+#-------------------------------------------------------------------------------
+plt.twoway.sec.hem.MD <- plt.twoway.sec.hem.MD + 
+  scale_y_continuous(
+    breaks=seq(
+      ymin, 
+      ymax, 
+      0.1
+    ),
+    limits=c(
+      min(data.mean.MD[data.mean.MD$meas == "fa","value"]), 
+      ymax
+    ),
+    expand = expansion(mult = c(0.05, 0.1)),
+    labels = label_number(
+      accuracy = 0.1
+    )
+  )
+
+# save the figure
+#-------------------------------------------------------------------------------
+# big plot
+ncolx <- 4
+ncol <- ncolx + 3
+pltt <-  
+  ggarrange(
+    plt.twoway.section.hem.lines.FO,
+    NULL,
+    plt.twoway.sec.hem.FO,
+    NULL,
+    plt.twoway.section.hem.lines.MD,
+    NULL,
+    plt.twoway.sec.hem.MD,
+    align = "h",
+    labels = c(
+      "A1", 
+      "", 
+      "A2", 
+      "", 
+      "B1", 
+      "", 
+      "B2"
+    ),  # Add labels
+    label.x = -0.05,
+    font.label = list(color="black",size=36),
+    ncol = ncol,
+    nrow = 1,
+    widths = c(0.75, 0.05, 1, 0.1, 0.75, 0.05, 1),
+    common.legend = TRUE,
+    legend = "right"
+  )
+
+ggsave(
+  file = file.path(
+    figpath,
+    "hemisphere_section_interactions"
+  ),
+  height = 5*max(
+    length(unique(dt.FO.mean.parts[,"tractlabel"])),
+    length(unique(dt.MD.mean.parts[,"PFCgroup"])))+5*0.15,# 4 each plot 
+  width = 5.75*ncolx+ 4 ,# 4 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 850,
+  device = "png",
+ pltt
+)
+
+```
+
+```{r}
+#===============================================================================
+# SUPPLEMENTARY FIGURES: Plot tract profiles for dPFC, mPFC, IFC, OrbPoPFC
+#===============================================================================
+plt.dPFC.FA.clean <- plt.profiles.V6(
+  dtclean = dt.clean.MDgroups.no.outliers,
+  group = "group",
+  groups = c("dPFC"),
+  metric = metric,
+  ses = "001",
+  ylabel = ylabel,
+  tracts = "MD",
+  # dt.mean.sd2 = dt.clean.avgvector.mean.sd.agegroup,
+  suffix = "dPFC_clean_avg",
+  facet.formula = "fulltractlabel ~ Hemisphere"
+)
+plt.dPFC.FA.clean <- plt.dPFC.FA.clean +
+  ggh4x::facet_wrap2(
+    vars(fulltractlabel,Hemisphere),
+    ncol=4,
+    strip = strip_nested(bleed = FALSE)
+    
+  ) +
+  ggtitle("dPFC group") +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 36),
+    panel.spacing.x = unit(1, "lines"),
+    panel.spacing.y = unit(-1, "lines"),
+  )
+
+ggsave(
+  file = file.path(
+    figpath,
+    "dPFC-tract_profiles"
+  ),
+  height = 3.5*7,# 4 each plot 
+  width = 5*4 ,# 5 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 600,
+  device = "png",
+ plt.dPFC.FA.clean
+)
+
+# ------------------------------------------------------------------------------
+# mPFC
+# ------------------------------------------------------------------------------
+plt.mPFC.FA.clean <- plt.profiles.V6(
+  dtclean = dt.clean.MDgroups.no.outliers,
+  group = "group",
+  groups = c("mPFC"),
+  metric = metric,
+  ses = "001",
+  ylabel = ylabel,
+  tracts = "MD",
+  suffix = "mPFC_clean_avg",
+  facet.formula = "fulltractlabel ~ Hemisphere"
+)
+plt.mPFC.FA.clean <- plt.mPFC.FA.clean +
+  ggh4x::facet_wrap2(
+    vars(fulltractlabel,Hemisphere),
+    ncol=4,
+    strip = strip_nested(bleed = FALSE)
+    
+  ) +
+  ggtitle("mPFC group") +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size=36),
+    panel.spacing.x = unit(1, "lines"),
+    panel.spacing.y = unit(-1, "lines"),
+  )
+
+ggsave(
+  file = file.path(
+    figpath,
+    "mPFC-tract_profiles"
+  ),
+  height = 3.5*3,# 4 each plot 
+  width = 5*4 ,# 5 each plot
+  bg = "white",
+  units = "in",
+  dpi = 600,
+  device = "png",
+ plt.mPFC.FA.clean
+)
+
+# ------------------------------------------------------------------------------
+# IFC
+# ------------------------------------------------------------------------------
+plt.IFC.FA.clean <- plt.profiles.V6(
+  dtclean = dt.clean.MDgroups.no.outliers,
+  group = "group",
+  groups = c("IFC"),
+  metric = metric,
+  ses = "001",
+  ylabel = ylabel,
+  tracts = "MD",
+  # dt.mean.sd2 = dt.clean.avgvector.mean.sd.agegroup,
+  suffix = "IFC_clean_avg",
+  facet.formula = "fulltractlabel ~ Hemisphere"
+)
+plt.IFC.FA.clean <- plt.IFC.FA.clean +
+  ggh4x::facet_wrap2(
+    vars(fulltractlabel,Hemisphere),
+    ncol=4,
+    strip = strip_nested(bleed = FALSE)
+    
+  ) +
+  ggtitle("IFC group") +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 36),
+    panel.spacing.x = unit(1, "lines"),
+    panel.spacing.y = unit(-1, "lines"),
+  )
+
+ggsave(
+  file = file.path(
+    figpath,
+    "IFC-tract_profiles"
+  ),
+  height = 3.5*6,# 4 each plot 
+  width = 5*4 ,# 5 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 600,
+  device = "png",
+ plt.IFC.FA.clean
+)
+
+# ------------------------------------------------------------------------------
+# OrbPoPFC
+# ------------------------------------------------------------------------------
+plt.OrbPoPFC.FA.clean <- plt.profiles.V6(
+  dtclean = dt.clean.MDgroups.no.outliers,
+  group = "group",
+  groups = c("OrbPoPFC"),
+  metric = metric,
+  ses = "001",
+  ylabel = ylabel,
+  tracts = "MD",
+  # dt.mean.sd2 = dt.clean.avgvector.mean.sd.agegroup,
+  suffix = "OrbPoPFC_clean_avg",
+  facet.formula = "fulltractlabel ~ Hemisphere"
+)
+plt.OrbPoPFC.FA.clean <- plt.OrbPoPFC.FA.clean +
+  ggh4x::facet_wrap2(
+    vars(fulltractlabel,Hemisphere),
+    ncol=4,
+    strip = strip_nested(bleed = FALSE)
+    
+  ) +
+  ggtitle("OrbPoPFC group") +
+  theme(
+    plot.title = element_text(face = "bold", hjust = 0.5, size = 36),
+    panel.spacing.x = unit(1, "lines"),
+    panel.spacing.y = unit(-1, "lines"),
+  )
+
+ggsave(
+  file = file.path(
+    figpath,
+    "OrbPoPFC-tract_profiles"
+  ),
+  height = 3.5*4,# 4 each plot 
+  width = 5*4 ,# 5 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 600,
+  device = "png",
+ plt.OrbPoPFC.FA.clean
+)
+
+```
+
+
+Chapter 6
+Empirical Study III
+Gray- and White-matter thalamic changes
+
+Thalamic Volume [%] ~ FA
+
+```{r}
+dt.FO.mean.parts.FA <- subset(dt.FO.mean.parts, meas == "fa")
+dt.FO.mean.parts.FA$nucleivolume2WT <- dt.FO.mean.parts.FA$nucleivolume2WT*100
+levels(dt.FO.mean.parts.FA$hemgen) <- gsub(" - ","\n",levels(dt.FO.mean.parts.FA$hemgen))
+
+# ------------------------------------------------------------------------------
+# EXPLORATORY 
+# put in Y = nucleiVolume / WholeThalamusVolume
+# ------------------------------------------------------------------------------
+plt.FO.nuclei2WT.FA <- plt.linear.regressions3(
+  dt = dt.FO.mean.parts.FA,
+  y = "nucleivolume2WT",
+  x = "value",
+  group = "AGE",
+  group.label = "Age",
+  xlab = "FA",
+  ylab = bquote(
+    frac(
+      Vol["Nuclei"], 
+      Vol["Whole thalamus"]
+    ) ~ '[%]'
+  ),
+  ncol = 5,
+  facetgroup = "part",
+  facetgroup2 = "tractlabel",
+  font.size = 30,#20,
+  scales = "free",
+  independenty = TRUE,
+  linearegressions = TRUE,
+  removelabs = "all",
+  linearegressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE
+)
+
+plt.FO.nuclei2WT.FA2nuclei2WT <- plt.linear.regressions3(
+  dt = dt.FO.mean.parts.FA,
+  y = "nucleivolume2WT",
+  x = "meas2vol", #this meas2vol, the vol part is the nucleiVolume/WholeThalamus
+  group = "AGE",
+  group.label = "Age",
+  xlab = expression(
+    frac(
+      FA,
+      frac(
+        Vol["Nuclei"],
+        Vol["Whole thalamus"]
+      ) ~ '[%]'
+    )
+  ),
+  ylab = bquote(
+    frac(
+      Vol["Nuclei"], 
+      Vol["Whole thalamus"]
+    ) ~ '[%]'
+  ),
+  ncol = 5,
+  facetgroup = "part",
+  facetgroup2 = "tractlabel",
+  font.size = 30,#20,
+  scales = "free",
+  independenty = TRUE,
+  linearegressions = TRUE,
+  removelabs = "all",
+  linearegressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE,
+  scale.x = FALSE
+)
+
+# ------------------------------------------------------------------------------
+# put in Y = nucleiVolumeAdjForICV
+# ------------------------------------------------------------------------------
+# add FO nuclei volumes corrected for ICV
+FO.nuclei <- unique(dt.FO.mean.parts.FA$nuclei)
+dt.vol.adjICV <- data.frame()
+for (vol in FO.nuclei){
+  aux <- perform.ICV.correction(
+    dt = unique(
+      dt.FO.mean.parts.FA[
+        dt.FO.mean.parts.FA[,"nuclei"] == vol, 
+        c("sub","Hemisphere","Gender","ICV",vol)
+      ]
+    ),
+    volume = vol,
+    adjustBy = "ICV"
+  )
+  names(aux)[names(aux) == paste0(vol,"adj","ICV")] <- "voladjICV"
+  aux[,"nuclei"] <- vol
+  aux <- aux[,!(names(aux) %in% c(vol))]
+  dt.vol.adjICV <- rbind(dt.vol.adjICV,aux)
+}
+rm(aux)
+
+# add FO nuclei volumes adjusted for ICV to the main dataframe
+dt.FO.mean.parts.FA <- merge(
+  dt.FO.mean.parts.FA, 
+  dt.vol.adjICV[,c("sub","Hemisphere","nuclei","voladjICV")], 
+  by = c("sub","Hemisphere","nuclei"),
+  all.x = TRUE
+)
+
+plt.FO.voladjICV.FA <- plt.xy.regressions5(
+  dt = dt.FO.mean.parts.FA,
+  y = "voladjICV",
+  x = "value",
+  group = "AGE",
+  group.label = "Age",
+  xlab = "FA",
+  ylab = bquote(
+    Vol["nuclei adj. ICV"]
+  ),
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "tractlabel",
+  font.size = 30,#20,
+  removelabs = "all",
+  scales = NULL,
+  independenty = TRUE,
+  # regressions = TRUE,
+  regressions.hem.gen = TRUE,
+  #regressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE
+)
+
+# ------------------------------------------------------------------------------
+# put in Y = nucleiVolumeAdjForICV and in X = FA2voladjICV
+# then plot most appropiate regressions degree through the bootrstrap-BIC method
+# ------------------------------------------------------------------------------
+dt.FO.mean.parts.FA$FA2voladjICV <- dt.FO.mean.parts.FA$value/
+  dt.FO.mean.parts.FA$voladjICV
+
+# identify whether there are in the new variable FA2voladjICV outliers
+long_df <- dt.FO.mean.parts.FA %>%
+  group_by(Hemisphere, Gender, nuclei,part) %>%
+  mutate(
+    mean_value = mean(FA2voladjICV, na.rm = TRUE),
+    sd_value = sd(FA2voladjICV, na.rm = TRUE),
+    is_outlier = abs(FA2voladjICV - mean_value) > 3 * sd_value
+  ) %>%
+  ungroup()
+
+dt.FO.mean.parts.FA.clean <- dt.FO.mean.parts.FA[!(long_df$is_outlier),]
+# in the AR beyond 13 remove because look ugly
+dt.FO.mean.parts.FA.clean <- dt.FO.mean.parts.FA.clean[
+  !(dt.FO.mean.parts.FA.clean$FA2voladjICV > 13),
+]
+
+# after cleaning data make sure that all subjects have both left and right
+# hemispherical values, else delete the subject
+dt.FO.mean.parts.FA.clean.paired <- pair.data(
+  dt = dt.FO.mean.parts.FA.clean,
+  groupBy = c("tractlabel","part"),
+  pairBy = "Hemisphere",
+  levelspairBy = c("Left","Right"),
+  ID = "sub"
+) 
+
+BIC.FO.voladjICV.FA <- models.BIC.V2(
+    dataset = dt.FO.mean.parts.FA.clean.paired,
+    groupby = c("tractlabel","part"),
+    x = "voladjICV",
+    y = "value",
+    R_bootstrap = 1000
+  )
+
+# plot BIC tracts
+plt.BIC.FO.voladjICV.FA <- plt.BIC.V2(
+  dataset = BIC.FO.voladjICV.FA,
+  groupby = c("part","tractlabel"),
+  xlab="Polynomial degree",
+  ylab="BIC",
+  bold.title.colums = TRUE,
+  title=expression(
+    Vol["nuclei adj. ICV"] * " ~ FA"
+  ),
+  plt.size = 26
+) 
+
+ggsave(
+  file = file.path(figpath,"Fig_FO_BIC_Y=voladjICV_X=FA.png"),
+  height = 12,# 4 each plot 
+  width = 20,# 4 each plot
+  bg = "white",
+  units = "in",
+  dpi = 900,
+  device = "png",
+  plt.BIC.FO.voladjICV.FA$plt
+)
+
+
+#####
+# also select most appropiate regression degree through the bootstrap-BIC method
+BIC.FO.voladjICV.FA2voladjICV <- models.BIC.V2(
+    dataset = dt.FO.mean.parts.FA.clean.paired,
+    groupby = c("tractlabel","part"),
+    x = "voladjICV",
+    y = "FA2voladjICV",
+    R_bootstrap = 1000
+  )
+
+# plot BIC tracts
+plt.BIC.FO.voladjICV.FA2voladjICV <- plt.BIC.V2(
+  dataset = BIC.FO.voladjICV.FA2voladjICV,
+  groupby = c("part","tractlabel"),
+  xlab="Polynomial degree",
+  ylab="BIC",
+  bold.title.colums = TRUE,
+  title=expression(
+    Vol["nuclei adj. ICV"] * " ~ " *
+    frac(
+      FA,
+      Vol["nuclei adj. ICV"]
+    )
+  ),
+  plt.size = 26
+) 
+
+ggsave(
+  file = file.path(figpath,"Fig_FO_BIC_Y=voladjICV_X=FA2voladjICV_def.png"),
+  height = 12,# 4 each plot 
+  width = 20,# 4 each plot
+  bg = "white",
+  units = "in",
+  dpi = 900,
+  device = "png",
+  plt.BIC.FO.voladjICV.FA2voladjICV$plt
+)
+
+plt.FO.voladjICV.FA2voladjICV <- plt.xy.regressions5(
+   dt = dt.FO.mean.parts.FA.clean.paired,
+  y = "voladjICV",
+  x = "FA2voladjICV",
+  group = "AGE",
+  group.label = "Age",
+  xlab = expression(
+    frac(
+      FA,
+      Vol["nuclei adj. ICV"]*" ["*cm^3*"]"
+    )
+  ),
+  ylab = bquote(
+    Vol["nuclei adj. ICV"]*" ["*cm^3*"]"
+  ),
+  ncol = 5,
+  facetgroup = "part",
+  facetgroup2 = "tractlabel",
+  font.size = 30,#20,
+  scales = "free",
+  independenty = TRUE,
+  regressions.hem.gen = TRUE,
+  line.width = 1.5,
+  bold.title.colums = TRUE,
+  scale.x = FALSE,
+  dt.optimal.degree = plt.BIC.FO.voladjICV.FA2voladjICV$optimal.BIC
+)
+
+# ------------------------------------------------------------------------------
+# Redo in Y = nucleiVolumeAdjForICV and in X = FAvalue with data cleaned
+# ------------------------------------------------------------------------------
+# redo first plot after cleaning outliers and selecting subjects with both
+# hemispherical values
+plt.FO.voladjICV.FA <- plt.xy.regressions5(
+  dt = dt.FO.mean.parts.FA.clean.paired,
+  y = "voladjICV",
+  x = "value",
+  group = "AGE",
+  group.label = "Age",
+  xlab = "FA",
+  ylab = bquote(
+    Vol["nuclei adj. ICV"]*" ["*cm^3*"]"
+  ),
+  ncol = 5,
+  facetgroup = "part",
+  facetgroup2 = "tractlabel",
+  font.size = 30,
+  removelabs = "all",
+  scales = NULL,
+  independenty = TRUE,
+  # regressions = TRUE,
+  regressions.hem.gen = TRUE,
+  #regressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE,
+  plt.corr.stats = TRUE#,
+  # dt.optimal.degree = plt.BIC.FO.voladjICV.FA$optimal.BIC
+)
+
+## put figures together
+pltt <-  
+  ggarrange(
+    plt.FO.voladjICV.FA,
+    NULL,
+    plt.FO.voladjICV.FA2voladjICV,
+    align = "hv",
+    labels = c(
+      "A",
+      "", 
+      "B"
+    ),
+    label.y = 0.96,
+    font.label = list(color="black",size=42),
+    ncol = 1,
+    nrow = 3,
+    widths = c(1),
+    heights = c(1, -0.15, 1),
+    common.legend = TRUE,
+    legend = "right"
+  )
+
+ggsave(
+  file = file.path(figpath,"Fig_FO_Y=voladjICV_X=FA2voladjICV_def_test.png"),
+  height = 26,# 4 each plot +2 of space
+  width = 24,# 4 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 600,
+  device = "png",
+  pltt
+)
+```
+
+Check through bootstrapping
+
+```{r}
+BIC.FO.voladjICV.FA2voladjICV <- models.BIC(
+    dataset = dt.FO.mean.parts.FA.clean.paired,
+    groupby = c("tractlabel","part"),
+    x = "voladjICV",
+    y = "FA2voladjICV",
+    R_bootstrap = 10
+  )
+
+# plot BIC tracts
+plt.BIC.FO.voladjICV.FA2voladjICV <- plt.BIC.V2(
+  dataset = BIC.FO.voladjICV.FA2voladjICV,
+  groupby = c("part","tractlabel"),
+  xlab="Polynomial degree",
+  ylab="BIC",
+  bold.title.colums = TRUE,
+  title=expression(
+    Vol["nuclei adj. ICV"] * " ~ " *
+    frac(
+      FA,
+      Vol["nuclei adj. ICV"]
+    )
+  )
+) 
+
+plt.FO.voladjICV.FA2voladjICV <- plt.xy.regressions5(
+   dt = dt.FO.mean.parts.FA.clean.paired,
+  y = "voladjICV",
+  x = "FA2voladjICV",
+  group = "AGE",
+  group.label = "Age",
+  xlab = expression(
+    frac(
+      FA,
+      Vol["nuclei adj. ICV"]
+    )
+  ),
+  ylab = bquote(
+    Vol["nuclei adj. ICV"]
+  ),
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "tractlabel",
+  font.size = 30,#20,
+  scales = "free",
+  independenty = TRUE,
+  regressions.hem.gen = TRUE,
+  line.width = 1.5,
+  bold.title.colums = TRUE,
+  scale.x = FALSE,
+  dt.optimal.degree = plt.BIC.FO.voladjICV.FA2voladjICV$optimal.BIC
+)
+
+# ------------------------------------------------------------------------------
+# for the MD
+BIC.MD.MDadjICV.FA2MDadjICV <- models.BIC(
+    dataset = dt.MD.mean.parts.mean.FA,
+    groupby = c("PFCgroup","part"),
+    y = "MDadjICV",
+    x = "FA2MDadjICV",
+    R_bootstrap = 10
+  )
+
+# plot BIC tracts
+plt.BIC.MD.MDadjICV.FA2MDadjICV <- plt.BIC.V2(
+  dataset = BIC.MD.MDadjICV.FA2MDadjICV,
+  groupby = c("part","PFCgroup"),
+  xlab = "Polynomial degree",
+  ylab = "BIC",
+  bold.title.colums = TRUE,
+  title=expression(
+    MD["adj. ICV"] * " ~ " *
+    frac(
+      FA,
+      MD["adj. ICV"]
+    )
+  )
+) 
+
+plt.MDadjICV.FA2MDadjICV <- plt.xy.regressions5(
+  dt = dt.MD.mean.parts.mean.FA,
+  y = "MDadjICV",
+  x = "FA2MDadjICV",
+  group = "AGE",
+  group.label = "Age",
+  ylab = bquote(
+    MD["adj. ICV"]
+  ),
+  xlab = expression(
+    frac(
+      FA,
+      MD["adj. ICV"]
+    )
+  ),
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "PFCgroup",
+  font.size = 30,#20,
+  removelabs = "all",
+  scales = NULL,
+  regressions.hem.gen = TRUE,
+  line.width = 1.5,
+  bold.title.colums = TRUE,
+  dt.optimal.degree = plt.BIC.MD.MDadjICV.FA2MDadjICV$optimal.BIC
+)
+
+plt.MDadjICV.FA2MDadjICV <- plt.MDadjICV.FA2MDadjICV +
+  scale_y_continuous(
+    breaks = seq(
+      0.6,
+      1.4,
+      0.2
+    ), 
+    limits = c(NA, NA)
+  ) +
+  theme(
+    legend.box.margin = margin(0, 0, 0, -7)
+  )
+```
+
+
+put here statistics to see whether differences between hemispheres and biological
+sex remain
+
+```{r}
+# lets build the model
+# dependent variable <- nuclei volume
+# independent variables
+# 1. covariate: FA values (between subjects)
+# 2. between subjects: gender
+# 3. within subjects: hemisphere
+
+# full analysis
+analysis_results.FO.voladjICV.FA2voladjICV <- run_aov_analysis.V2(
+  data = dt.FO.mean.parts.FA.clean.paired[
+    dt.FO.mean.parts.FA.clean.paired[["meas"]] == "fa" & 
+    dt.FO.mean.parts.FA.clean.paired[["outlier"]] == FALSE ,
+  ],
+  group = c("tractlabel","part"),
+  dependent_variable = "voladjICV",
+  fixed_effects = "FA2voladjICV * Gender * Hemisphere",
+  random_effects = "(1 | sub)",
+  bonferroni_comparisons = 9
+)
+
+#####ful analysis
+aov2 <- ezANOVA(
+  data = subset(
+    dt.FO.mean.parts.FA.clean.paired, 
+    meas == "fa" & tractlabel %in% "OR" & part %in% "1st"
+  ), 
+  dv = .(voladjICV),
+  wid = .(sub),
+  between = .(Gender),
+  within = .(Hemisphere),
+  between_covariates = .(value),
+  detailed = TRUE,
+  type = 3
+)
+
+# linear with no random effects
+dd<- dt.FO.mean.parts.FA.clean.paired[
+    dt.FO.mean.parts.FA.clean.paired[["meas"]] == "fa" & 
+    dt.FO.mean.parts.FA.clean.paired[["tractlabel"]] == "OR" & 
+    dt.FO.mean.parts.FA.clean.paired[["outlier"]] == FALSE &
+    dt.FO.mean.parts.FA.clean.paired[["part"]] == "3rd"  ,
+  ]
+
+eqq <- paste(
+      "voladjICV",
+      "FA2voladjICV * Gender * Hemisphere",
+      sep="~"
+    )
+
+# MODEL
+mm <- lm(
+  eqq,
+  data = dd
+)
+
+car::Anova(mm, type="III")
+
+dd$FA2voladjICV <- as.numeric(dd$FA2voladjICV)
+dd$sub <- as.factor(dd$sub)
+aov3 <- afex::aov_car(
+  voladjICV ~ FA2voladjICV * Gender * Hemisphere + Error(sub), 
+  data = dd,
+  factorize = FALSE
+)
+
+
+```
+
+Now plot the MD volumes to FA
+
+```{r}
+#-------------------------------------------------------------------------------
+# MEDIODORSAL NUCLEUS
+#-------------------------------------------------------------------------------
+dt.MD.mean.parts.mean <- dt.MD.mean.parts %>%
+  group_by_at(c(
+    "part",
+    "agegroup",
+    "PFCgroup",
+    "AGE",
+    "MD2WT",
+    "MD",
+    "Hemisphere",
+    "Gender",
+    "hemgen",
+    "meas",
+    "sub"
+  )) %>%
+  summarise_at(
+    vars(value), 
+    list(value = mean)
+  )
+dt.MD.mean.parts.mean.FA <- subset(dt.MD.mean.parts.mean, meas == "fa")
+dt.MD.mean.parts.mean.FA$FA2MD2WT <- dt.MD.mean.parts.mean.FA$value/
+  dt.MD.mean.parts.mean.FA$MD2WT
+dt.MD.mean.parts.mean.FA$MD2WT <- dt.MD.mean.parts.mean.FA$MD2WT*100
+
+levels(dt.MD.mean.parts.mean.FA$hemgen) <- gsub(
+  " - ","\n",
+  levels(dt.MD.mean.parts.mean.FA$hemgen)
+)
+
+# ------------------------------------------------------------------------------
+# EXPLORATORY
+# A. put in Y = MD2WholeThalamus and X = FA
+# B. put in Y = MD2WholeThalamus and X = FA/(MD2WholeThalamus)
+# ------------------------------------------------------------------------------
+plt.MD2vol.FA <- plt.xy.regressions4(
+  dt = dt.MD.mean.parts.mean.FA,
+  y = "MD2WT",
+  x = "value",
+  group = "AGE",
+  group.label = "Age",
+  ylab = bquote(
+    frac(
+      Vol["Mediodorsal"],
+      Vol["Whole thalamus"]
+    ) ~ '[%]'
+  ),
+  xlab = "FA",
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "PFCgroup",
+  font.size = 30,#20,
+  removelabs = "y",
+  scales = NULL,
+  regressions = TRUE,
+  regressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE
+)
+
+plt.MD2vol.FA2MD2WT <- plt.xy.regressions4(
+  dt = dt.MD.mean.parts.mean.FA,
+  y = "MD2WT",
+  x = "FA2MD2WT",
+  group = "AGE",
+  group.label = "Age",
+  xlab = expression(
+    frac(
+      FA,
+      frac(
+        Vol["MD"],
+        Vol["Whole thalamus"]
+      ) ~ '[%]'
+    )
+  ),
+  ylab = bquote(
+    frac(
+      Vol["Mediodorsal"],
+      Vol["Whole thalamus"]
+    )# ~ '[%]'
+  ),
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "PFCgroup",
+  font.size = 30,#20,
+  removelabs = "y",
+  scales = NULL,
+  regressions = TRUE,
+  regressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE
+)
+
+plt.MD2vol.FA2MD2WT <- plt.MD2vol.FA2MD2WT +
+  scale_x_continuous(
+    breaks = seq(
+      floor(min(dt.MD.mean.parts.mean.FA$FA2MD2WT)),
+      ceil(max(dt.MD.mean.parts.mean.FA$FA2MD2WT)),
+      1
+    ), 
+    limits = c(NA, NA)
+  )
+
+ggsave(
+  file = file.path(figpath,"Fig_PFC-MD_Y=MD2WT_X=FA2MD2WT.png"),
+  height = 12,# 4 each plot 
+  width = 20,# 4 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 200,
+  device = "png",
+  plt.MD2vol.FA2MD2WT
+)
+
+# ------------------------------------------------------------------------------
+# put in Y = MDadjICV and X = FA/MDadjICV
+# ------------------------------------------------------------------------------
+# get ICV data
+dt.ICV <- as.data.frame(unique(dt.clean.MDgroups.no.outliers[,c("sub","ICV")]))
+
+dt.MD <- unique(dt.MD.mean.parts.mean.FA[,c("sub","Hemisphere","Gender","MD")])
+dt.ICV.MD <- merge(
+  dt.ICV,
+  dt.MD,
+  by = "sub", 
+  all.x = TRUE
+)
+
+# perform adjustement for ICV in the MD volumes
+dt.ICV.MD <- perform.ICV.correction(
+  dt = dt.ICV.MD,
+  volume = "MD",
+  adjustBy = "ICV"
+)
+
+# add MD adjusted for ICV
+dt.MD.mean.parts.mean.FA <- merge(
+  dt.MD.mean.parts.mean.FA, 
+  dt.ICV.MD[,c("sub","Hemisphere","MDadjICV")], 
+  by = c("sub","Hemisphere"), 
+  all.x = TRUE
+)
+
+# from the MDadjICV because I explored data before I remove a specific outlier
+# that is too far away from the population when showing the scatter plot
+sub.outlier <- unique(
+  dt.MD.mean.parts.mean.FA[(dt.MD.mean.parts.mean.FA$MDadjICV > 1.4),"sub"]
+)
+dt.MD.mean.parts.mean.FA <- 
+  dt.MD.mean.parts.mean.FA[!(dt.MD.mean.parts.mean.FA$sub == sub.outlier),]
+
+# get FA/MDadjICV
+dt.MD.mean.parts.mean.FA$FA2MDadjICV <- dt.MD.mean.parts.mean.FA$value/
+  dt.MD.mean.parts.mean.FA$MDadjICV
+
+# ------------------------------------------------------------------------------
+# EXPLORATORY
+# ------------------------------------------------------------------------------
+# EXPLORATORY in Y = MD2WT and X = FA2MDadjICV
+plt.MD2vol.FA2MDadjICV <- plt.xy.regressions4(
+  dt = dt.MD.mean.parts.mean.FA,
+  y = "MD2WT",
+  x = "FA2MDadjICV",
+  group = "AGE",
+  group.label = "Age",
+  xlab = expression(
+    frac(
+      FA,
+      MD["adj. ICV"]
+    )
+  ),
+  ylab = bquote(
+    frac(
+      Vol["Mediodorsal"],
+      Vol["Whole thalamus"]
+    ) ~ '[%]'
+  ),
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "PFCgroup",
+  font.size = 30,#20,
+  removelabs = "y",
+  scales = NULL,
+  regressions = TRUE,
+  regressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE
+)
+# EXPLORATORY in Y = MDadjICV and X = FA2rawMD
+dt.MD.mean.parts.mean.FA$FA2rawMD <- dt.MD.mean.parts.mean.FA$value/
+  dt.MD.mean.parts.mean.FA$MD
+plt.MDadjICV.FA2rawMD <- plt.xy.regressions4(
+  dt = dt.MD.mean.parts.mean.FA,
+  y = "MDadjICV",
+  x = "FA2rawMD",
+  group = "AGE",
+  group.label = "Age",
+  ylab = bquote(
+    MD["adj. ICV"]
+  ),
+  xlab = expression(
+    frac(
+      FA,
+      MD["adj. ICV"]
+    )
+  ),
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "PFCgroup",
+  font.size = 30,#20,
+  removelabs = "all",
+  scales = NULL,
+  regressions = TRUE,
+  regressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE
+)
+
+#-------------------------------------------------------------------------------
+# A. Y=MEDIODORSAL adj ICV - X=FA
+# B. Y=MEDIODORSAL adj ICV - X=FA/MDadjICV
+#-------------------------------------------------------------------------------
+plt.MDadjICV.FA <- plt.xy.regressions5(
+  dt = dt.MD.mean.parts.mean.FA,
+  y = "MDadjICV",
+  x = "value",
+  group = "AGE",
+  group.label = "Age",
+  xlab = "FA",
+  ylab = bquote(
+    MD["adj. ICV"]*" ["*cm^3*"]"
+  ),
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "PFCgroup",
+  font.size = 30,
+  removelabs = "all",
+  scales = NULL,
+  regressions.hem.gen = TRUE,
+  # regressions.color = "#00BFFF",
+  line.width = 1.5,
+  bold.title.colums = TRUE,
+  plt.corr.stats = TRUE
+) +
+  theme(
+    legend.box.margin = margin(0, 0, 0, -7)
+  )
+
+# select most appropiate regression degree models for the 
+# MDadjICV - FA
+BIC.MD.MDadjICV.FA <- models.BIC.V2(
+    dataset = dt.MD.mean.parts.mean.FA,
+    groupby = c("PFCgroup","part"),
+    y = "MDadjICV",
+    x = "value",
+    R_bootstrap = 1000
+  )
+
+# plot BIC tracts
+plt.BIC.MD.MDadjICV.FA <- plt.BIC.V2(
+  dataset = BIC.MD.MDadjICV.FA,
+  groupby = c("part","PFCgroup"),
+  xlab = "Polynomial degree",
+  ylab = "BIC",
+  bold.title.colums = TRUE,
+  title=expression(
+    MD["adj. ICV"] * " ~ FA"
+  ),
+  plt.size = 26
+) 
+
+
+# select most appropiate regression degree models for the 
+# MDadjICV - FA2MDadjICV
+BIC.MD.MDadjICV.FA2MDadjICV <- models.BIC.V2(
+    dataset = dt.MD.mean.parts.mean.FA,
+    groupby = c("PFCgroup","part"),
+    y = "MDadjICV",
+    x = "FA2MDadjICV",
+    R_bootstrap = 1000
+  )
+
+# plot BIC tracts
+plt.BIC.MD.MDadjICV.FA2MDadjICV <- plt.BIC.V2(
+  dataset = BIC.MD.MDadjICV.FA2MDadjICV,
+  groupby = c("part","PFCgroup"),
+  xlab = "Polynomial degree",
+  ylab = "BIC",
+  bold.title.colums = TRUE,
+  title=expression(
+    MD["adj. ICV"] * " ~ " *
+    frac(
+      FA,
+      MD["adj. ICV"]
+    )
+  ),
+  plt.size = 26
+) 
+
+# save the bic plot for supplementary
+ggsave(
+  file = file.path(figpath,"Fig_PFC-MD_BIC_Y=MDadjICV_X=FA2MDadjICV_def.png"),
+  height = 12,# 4 each plot
+  width = 16,# 4 each plot
+  bg = "white",
+  units = "in",
+  dpi = 900,
+  device = "png",
+  plt.BIC.MD.MDadjICV.FA2MDadjICV$plt
+)
+
+plt.MDadjICV.FA2MDadjICV <- plt.xy.regressions5(
+  dt = dt.MD.mean.parts.mean.FA,
+  y = "MDadjICV",
+  x = "FA2MDadjICV",
+  group = "AGE",
+  group.label = "Age",
+  ylab = bquote(
+    MD["adj. ICV"]*" ["*cm^3*"]"
+  ),
+  xlab = expression(
+    frac(
+      FA,
+      MD["adj. ICV"]*" ["*cm^3*"]"
+    )
+  ),
+  ncol = 4,
+  facetgroup = "part",
+  facetgroup2 = "PFCgroup",
+  font.size = 30,#20,
+  removelabs = "all",
+  scales = NULL,
+  regressions.hem.gen = TRUE,
+  line.width = 1.5,
+  bold.title.colums = TRUE,
+  dt.optimal.degree = plt.BIC.MD.MDadjICV.FA2MDadjICV$optimal.BIC
+) +
+  scale_x_continuous(
+    breaks = seq(
+      0.3,
+      0.9,
+      0.2
+    )
+  ) +
+  theme(
+    legend.box.margin = margin(0, 0, 0, -7)
+  )
+
+plt.MD.FA.relation <-  
+  annotate_figure(ggarrange(
+    plt.MDadjICV.FA,
+    NULL,
+    plt.MDadjICV.FA2MDadjICV,
+    align = "hv",
+    labels = c(
+      "A",
+      "", 
+      "B"
+    ),  # Add labels
+    # label.x = 0.01,
+    label.y = 1.035,
+    font.label = list(color="black",size=42),
+    ncol = 1,
+    nrow = 3,
+    widths = c(1),
+    heights = c(1, 0, 1),
+    common.legend = TRUE,
+    legend = "right"
+  ),
+  top = text_grob(" ", size = 25))
+
+ggsave(
+  file = file.path(figpath,"Fig_PFC-MD_Y=MDadjICV_X=FA2MDadjICV_def.png"),
+  height = 26,# 4 each plot +2 of space
+  width = 20,# 4 each plot + 4 legend
+  bg = "white",
+  units = "in",
+  dpi = 900,
+  device = "png",
+  plt.MD.FA.relation
+)
+
+```
+
+Anova analysis for the MD
+
+```{r}
+# quadratic term for anova
+t <- dt.MD.mean.parts.mean.FA %>%
+  group_by(PFCgroup, part) %>%
+  mutate(
+    x_c = as.numeric(FA2MDadjICV-mean(FA2MDadjICV)),
+    x2_c = as.numeric(x_c^2)
+  ) %>%
+  ungroup()
+
+# full analysis
+analysis_results.MD.MDadjICV.FA2MDadjICV <- run_aov_analysis.V2(
+  data = t,
+  group = c("PFCgroup","part"),
+  dependent_variable = "MDadjICV",
+  fixed_effects = "(x_c + x2_c) * Gender * Hemisphere",
+  random_effects = "(1 | sub)",
+  bonferroni_comparisons = 9
+)
+
+# For the 1st section
+# main effects of Gender and Hemisphere for dPFC and IFC
+analysis_results.MD.MDadjICV.FA2MDadjICV$dPFC_1st$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$mPFC_1st$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$IFC_1st$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$OrbPoPFC_1st$anova.stats.table
+
+# For the 2nd section
+# no main effefcts of factors in dPFC and IFC either
+# main effects of Gender and Hemisphere for mPFC and OrbPoPFC
+analysis_results.MD.MDadjICV.FA2MDadjICV$dPFC_2nd$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$mPFC_2nd$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$IFC_2nd$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$OrbPoPFC_2nd$anova.stats.table
+
+# For the 3rd section
+# main effect for hemisphere in all except for dPFC
+analysis_results.MD.MDadjICV.FA2MDadjICV$dPFC_3rd$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$mPFC_3rd$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$IFC_3rd$anova.stats.table
+analysis_results.MD.MDadjICV.FA2MDadjICV$OrbPoPFC_3rd$anova.stats.table
+
+```
+
+
+```{r}
+colnames <- c("Hemisphere","Gender","model","N","y","sd","se","ci","vol")
+data.BIC.MD.FA <- data.frame(
+  matrix(
+    ncol = length(colnames), 
+    nrow = 0, 
+    dimnames = list(NULL, colnames)
+  )
+)
+
+tracts <- unique(dt.MD.mean.parts.mean.FA$PFCgroup)
+for (tract in tracts){
+  aux <- models.BIC(
+    dataset = subset(dt.MD.mean.parts.mean.FA, PFCgroup == tract),
+    x = "value",
+    y = "MD2WT",
+    R_bootstrap = 1000
+  )
+  
+  aux$vol <- tract #workaround
+  data.BIC.MD.FA <- rbind(data.BIC.MD.FA,aux)
+  
+  assign(
+    paste0("plt.",tract,"BIC.MD2WT.FA"),
+    plt.BIC(
+      data.BIC.MD.FA,
+      volume=tract,
+      xlab="Polynomial degree",
+      ylab = "BIC"#,
+      # hide.x.axis.female = FALSE,
+      # hide.x.axis.male = FALSE
+    )
+  )
+  
+  tmp <- get(paste0("plt.",tract,"BIC.MD2WT.FA"))
+  
+  tmp$female <- tmp$female + 
+    make_title(
+      frac(Vol["Mediodorsal"], Vol["Whole thalamus"]) ~ "[%] ~", 
+      " FA dPFC | Female"
+    )
+  
+  tmp$male <- tmp$male + 
+    make_title(
+      frac(Vol["Mediodorsal"], Vol["Whole thalamus"]) ~ "[%] ~", 
+      " FA dPFC | Male"
+    )
+  
+  assign(
+    paste0("plt.",tract,"BIC.MD2WT.FA"),
+    tmp
+  )
+  
+}
+rm(aux)
+
+# plt.dPFC.BIC.MD2WT.FA <- plt.BIC(
+#   data.BIC.MD.FA,
+#   volume="dPFC",
+#   xlab="Polynomial degree",
+#   ylab = "BIC"#,
+#   # hide.x.axis.female = FALSE,
+#   # hide.x.axis.male = FALSE
+# )
+# 
+# plt.dPFC.BIC.MD2WT.FA$female <- plt.dPFC.BIC.MD2WT.FA$female +
+#   make_title(
+#     frac(Vol["Mediodorsal"], Vol["Whole thalamus"]) ~ "[%] ~", 
+#     " FA dPFC | Female"
+#   )
+# 
+# plt.dPFC.BIC.MD2WT.FA$male <- plt.dPFC.BIC.MD2WT.FA$male +
+#   make_title(
+#     frac(Vol["Mediodorsal"], Vol["Whole thalamus"]) ~ "[%] ~", 
+#     " FA dPFC | Male"
+#   )
+
+```
+
+
+
+## draft
+
+check data b=800 vs b=1500 to see whether the sequence is a main effect
+
+```{r}
+# SendyBillit b = 800
+# Garuna & Ninobil: TR=10500
+dt <- dt[!(dt$project == "SendyBilit"),]
+n_TR_10500 <- length(unique(dt[dt$project %in% c("GARUNA","NINOBIL"), "sub"]))
+subs_TR_10500 <- unique(dt[dt$project %in% c("GARUNA","NINOBIL"), "sub"])
+
+cohort_TR_10500 <- unique(
+  dt.FO.mean.parts[
+    dt.FO.mean.parts$sub %in% subs_TR_10500,
+    c("sub","AGE","agegroup","Gender")
+  ]
+)
+
+stats_cohort_TR_10500 <- cohort_TR_10500 %>%
+    group_by(agegroup, Gender) %>%
+    dplyr::summarise(
+        count = n(),
+        mean_age = mean(AGE, na.rm = TRUE),
+        median_age = median(AGE, na.rm = TRUE),
+        min_age = min(AGE, na.rm = TRUE),
+        max_age = max(AGE, na.rm = TRUE),
+        sd_age = sd(AGE, na.rm = TRUE)
+    ) %>%
+    ungroup()
+
+stats_cohort_TR_10500 <- as.data.frame(stats_cohort_TR_10500)
+
+cohort_TR_9300 <- unique(
+  dt.FO.mean.parts[
+    !(dt.FO.mean.parts$sub %in% subs_TR_10500),
+    c("sub","AGE","agegroup","Gender")
+  ]
+)
+
+stats_cohort_TR_9300 <- cohort_TR_9300 %>%
+    group_by(agegroup, Gender) %>%
+    dplyr::summarise(
+        count = n(),
+        mean_age = mean(AGE, na.rm = TRUE),
+        median_age = median(AGE, na.rm = TRUE),
+        min_age = min(AGE, na.rm = TRUE),
+        max_age = max(AGE, na.rm = TRUE),
+        sd_age = sd(AGE, na.rm = TRUE)
+    ) %>%
+    ungroup()
+
+stats_cohort_TR_9300 <- as.data.frame(stats_cohort_TR_9300)
+
+# lets take only young and elder
+dt.FO.mean.parts[
+  dt.FO.mean.parts$project %in% c("GARUNA","NINOBIL"), 
+  "seq"
+] <- "TR10500"
+dt.FO.mean.parts[
+  !(dt.FO.mean.parts$project %in% c("GARUNA","NINOBIL")), 
+  "seq"
+] <- "TR9300"
+dt.FO.mean.parts$seq <- factor(dt.FO.mean.parts$seq)
+
+tt <- dt.FO.mean.parts[dt.FO.mean.parts$agegroup %in% c("Young","Elder") &
+                         !(dt.FO.mean.parts$project == "SendyBilit"),]
+
+yy10500 <- subset(dt.FO.mean.parts, meas == "fa" & seq == "TR10500")
+yy9300 <- subset(dt.FO.mean.parts, meas == "fa" & seq == "TR9300")
+
+# run anova
+analysis_results <- run_aov_analysis(
+  data = tt[
+    tt[["meas"]] == "fa" & 
+    tt[["outlier"]] == FALSE &
+    !(tt[["project"]] == "MINI"),
+  ],
+  group = 'tractlabel',
+  dependent_variable = "value",
+  fixed_effects = "seq * agegroup * Gender * part * Hemisphere",
+  random_effects = "(1  | sub)+ (1|part:sub) + (1|Hemisphere:sub)",
+  bonferroni_comparisons = 9
+)
+
+tract_names <- FO.tracts
+##
+# Process each tract's results
+formatted_results <- lapply(tract_names, function(tract) {
+  df <- analysis_results[[tract]]$anova.stats.table  # Extract the tract's dataframe
+  df %>%
+    mutate(!!tract := format_f_p(`F-value`, `P-value`)) %>%  # Format F and P values together
+    select(Effects, !!tract)  # Keep only Effects and formatted values
+})
+
+# Merge all tract data into one wide-format table
+anova_wide <- Reduce(
+  function(df1, df2) full_join(df1, df2, by = "Effects"), 
+  formatted_results
+)
+
+# Replace "\n" with actual line breaks in all columns except "Effects"
+anova_wide <- anova_wide %>%
+  mutate(across(-Effects, ~ gsub("\\\\n", "\n", .))) 
+
+p_values_df <- lapply(tract_names, function(tract) {
+  df <- analysis_results[[tract]]$anova.table  # Extract the tract's dataframe
+  df %>%
+    mutate(!!tract := `Pr..F.`) %>%  # Format F and P values together
+    select(effects, !!tract)  # Keep only Effects and formatted values
+})
+
+# Combine all p-values into one data frame, joining by the 'Effects' column
+p_values_df <- Reduce(function(x, y) {
+  left_join(x, y, by = "effects")  # Join by 'Effects' to merge the results
+}, p_values_df)
+
+# Function to apply background color based on p-value
+apply_background_color <- function(p_value) {
+  color_scale(p_value) # Use the continuous color scale
+}
+
+# print into a word formart
+# Convert to a flextable
+anova_flextable <- anova_wide %>%
+  flextable() %>%
+  autofit()  # Adjust column sizes automatically
+
+anova_flextable <- bg(
+  anova_flextable,
+  j = names(anova_wide[2:ncol(anova_wide)]),
+  bg = 
+sapply(p_values_df[,2:ncol(anova_wide)], apply_background_color), 
+  part = "body"
+  )
+
+# Set column widths (in centimeters)
+anova_flextable_FO <- anova_flextable %>%
+  flextable::set_table_properties(
+    width = 0.95, # here convert 3.16 cm to inches 
+    layout = "autofit"
+  )
+```
+
+```{r}
+# data.mean.MD <- dt.clean.avgvector.outliers[dt.clean.avgvector.outliers$group %in% c("dPFC","mPFC","IFC","OrbPoPFC"),]
+
+data.mean.MD <- dt.MD.mean.parts %>%
+    group_by_at(c("part",
+                  "agegroup",
+                  "PFCgroup",
+                  "Hemisphere",
+                  "Gender",
+                  "meas",
+                  "sub",
+                  "project")) %>%
+    summarise_at(vars("value"), list("value" = mean))
+data.mean.MD <- as.data.frame(data.mean.MD)
+
+data.mean.MD <- data.mean.MD[!(data.mean.MD$project == "SendyBilit"),] # discard this one because has b = 800
+
+# lets take only young and elder
+data.mean.MD[
+  data.mean.MD$project %in% c("GARUNA","NINOBIL"), 
+  "seq"
+] <- "TR10500"
+data.mean.MD[
+  !(data.mean.MD$project %in% c("GARUNA","NINOBIL")), 
+  "seq"
+] <- "TR9300"
+data.mean.MD$seq <- factor(data.mean.MD$seq)
+
+tt <- data.mean.MD[data.mean.MD$agegroup %in% c("Young","Elder"),]
+
+yy10500 <- subset(data.mean.MD, meas == "fa" & seq == "TR10500")
+yy9300 <- subset(data.mean.MD, meas == "fa" & seq == "TR9300")
+
+# run anova
+analysis_results <- run_aov_analysis(
+  data = tt[
+    tt[["meas"]] == "fa" & 
+    # tt[["outlier"]] == FALSE &
+    !(tt[["project"]] == "MINI"),
+  ],
+  group = 'PFCgroup',
+  dependent_variable = "value",
+  fixed_effects = "seq * agegroup * Gender * part * Hemisphere",
+  random_effects = "(1  | sub)+ (1|part:sub) + (1|Hemisphere:sub)",
+  bonferroni_comparisons = 9
+)
+
+##
+tract_names <- c("dPFC","mPFC","IFC","OrbPoPFC")
+# Process each tract's results
+formatted_results <- lapply(tract_names, function(tract) {
+  df <- analysis_results[[tract]]$anova.stats.table  # Extract the tract's dataframe
+  df %>%
+    mutate(!!tract := format_f_p(`F-value`, `P-value`)) %>%  # Format F and P values together
+    select(Effects, !!tract)  # Keep only Effects and formatted values
+})
+
+# Merge all tract data into one wide-format table
+anova_wide <- Reduce(
+  function(df1, df2) full_join(df1, df2, by = "Effects"), 
+  formatted_results
+)
+
+# Replace "\n" with actual line breaks in all columns except "Effects"
+anova_wide <- anova_wide %>%
+  mutate(across(-Effects, ~ gsub("\\\\n", "\n", .))) 
+
+p_values_df <- lapply(tract_names, function(tract) {
+  df <- analysis_results[[tract]]$anova.table  # Extract the tract's dataframe
+  df %>%
+    mutate(!!tract := `Pr..F.`) %>%  # Format F and P values together
+    select(effects, !!tract)  # Keep only Effects and formatted values
+})
+
+# Combine all p-values into one data frame, joining by the 'Effects' column
+p_values_df <- Reduce(function(x, y) {
+  left_join(x, y, by = "effects")  # Join by 'Effects' to merge the results
+}, p_values_df)
+
+# Function to apply background color based on p-value
+apply_background_color <- function(p_value) {
+  color_scale(p_value) # Use the continuous color scale
+}
+
+# print into a word formart
+# Convert to a flextable
+anova_flextable <- anova_wide %>%
+  flextable() %>%
+  autofit()  # Adjust column sizes automatically
+
+anova_flextable <- bg(
+  anova_flextable,
+  j = names(anova_wide[2:ncol(anova_wide)]),
+  bg = 
+sapply(p_values_df[,2:ncol(anova_wide)], apply_background_color), 
+  part = "body"
+  )
+
+# Set column widths (in centimeters)
+anova_flextable <- anova_flextable %>%
+  flextable::set_table_properties(
+    width = 0.95, # here convert 3.16 cm to inches 
+    layout = "autofit"
+  )
+```
+
+
+## draft
+
+Plot here the interactions
+
+```{r}
+library(rjson)
+library(matrixStats)
+library(wesanderson)
+library(see)
+library(viridis)
+library(ggh4x)
+library(ggnewscale)
+library(ggpubr)
+library(rstatix)
+library(ggprism)
+
+plt.twoway.section.hem.lines.FO <- double.interaction.lines(
+  dt.FO.mean.parts,
+  metric = "fa",
+  compare = "Hemisphere",
+  group = "tractlabel",
+  x = "part",
+  y = "value",
+  ylab = "FA",
+  xlab = "Section",
+  legend.title = "Hemisphere",
+  c("1st", "2nd", "3rd")
+)
+
+
+```
+
+
+```{r}
+# Function to perform ANOVA and Cohen's d calculation
+run_analysis <- function(var) {
+  list(
+    anova = anova.lmer.results(
+      data = subset(
+        dt.clean.outliers, 
+        meas == "fa" & outlier == FALSE & tractlabel %in% FO.tracts
+      ),
+      dependent.variable = "val",
+      fixed_effects = "agegroup * part* Hemisphere * Gender",
+      random_effects = "(1 + part + Hemisphere | sub)"
+    )
+  )
+}
+```
+
+```{r}
+library(nlme)
+options(contrasts = c("contr.treatment", "contr.poly"))
+
+dt.FO.mean.parts$Gender <- as.factor(dt.FO.mean.parts$Gender)
+dt.FO.mean.parts$part_numeric <- as.numeric(dt.FO.mean.parts$part)
+dt.FO.mean.parts <- subset(dt.FO.mean.parts, meas == "fa")
+
+
+
+if (length(unique(dt.FO.mean.parts[,"Hemisphere"])) == 2){
+  data.commonID <- c()
+  for (f in unique(dt.FO.mean.parts[,"tractlabel"])){
+    levels <- unique(dt.FO.mean.parts[,"Hemisphere"])
+    l1 <- unique(
+      dt.FO.mean.parts[dt.FO.mean.parts[,"Hemisphere"] == levels[1] & 
+                         dt.FO.mean.parts[,"tractlabel"] == f, "sub"]
+    )
+    l2 <- unique(
+      dt.FO.mean.parts[dt.FO.mean.parts[,"Hemisphere"] == levels[2] & 
+                         dt.FO.mean.parts[,"tractlabel"] == f, "sub"]
+    )
+    print(
+      c(
+        length(l1),
+        length(l2)
+      )
+    )
+
+    subs <- intersect(l1,l2) 
+    data.commonID <- rbind(
+      data.commonID, 
+      dt.FO.mean.parts[dt.FO.mean.parts[,"sub"] %in% subs &
+      dt.FO.mean.parts[,"tractlabel"]  == f,]
+    )
+  }
+  data <- data.commonID
+}
+
+
+
+tt <- nlmer.results(
+  data = subset(
+        data.commonID, 
+        meas == "fa" & outlier == FALSE & tractlabel %in% "OR"
+      ),
+      dependent.variable = "value",
+      fixed_effects = "agegroup * Hemisphere * Gender",
+      nonlinear.dependent.var = "part_numeric",
+  random.var = "sub"
+)
+
+```
+
+```{r}
+# check 2.2 https://keithlohse.github.io/mixed_effects_models/lohse_MER_section_03_factorial.html
+
+aov1 <- anova.results(
+      data = subset(
+       data.commonID,# dt.FO.mean.parts, 
+        meas == "fa" & outlier == FALSE & tractlabel %in% "DT"
+      ),
+      dependent.variable = "value",
+      fixed_effects = "agegroup * Gender * part * Hemisphere",
+      random_effects = "(1  | sub)+ (1|part:sub) + (1|Hemisphere:sub)"
+    )
+
+library(ez)
+aov2 <- ezANOVA(data = subset(
+        data.commonID, 
+        meas == "fa" & outlier == FALSE & tractlabel %in% "OR"
+      ), 
+    dv = .(value),
+    wid = .(sub),
+    between = .(agegroup,Gender),
+    within = .(part, Hemisphere),
+    detailed = TRUE,
+    type = 3
+)
+
+library(afex)
+afex::aov_car(value ~ agegroup*Gender*part*Hemisphere + Error(sub/(part*Hemisphere)), 
+    data=subset(
+        data.commonID, 
+        meas == "fa" & outlier == FALSE & tractlabel %in% "OR"
+      ))
+```
+
+
+```{r}
+run_analysis <- function() {
+  # Create an empty list to store results for each tract
+  results_list <- list()
+  
+  # Loop through each FO.tract
+  for (tract in FO.tracts) {
+    # Subset the data for the current tract
+    data_tract <- subset(
+      dt.FO.mean.parts, 
+      meas == "fa" & outlier == FALSE & tractlabel == tract
+    )
+    
+    # Run the analysis for the current tract and store it in the results list
+    results_list[[tract]] <- anova.lmer.results(
+      data = data_tract,
+      dependent.variable = "valmean",
+      fixed_effects = "agegroup * part * Hemisphere * Gender",
+      random_effects = "(1 + part | sub)"
+    )
+  }
+  
+  # Return the list with results for each tract
+  return(results_list)
+}
+
+analysis_results <- run_analysis()
+```
+
+
+Perform ANOVA on the linear mixed effects model of the MD bundles
+
+```{r}
+# Function to perform ANOVA and Cohen's d calculation
+run_analysis <- function(var) {
+  list(
+    anova = anova.results(
+      data = dt.clean.avgvector.outliers,
+      dependent.variable = "val",
+      fixed_effects = "agegroup * part* Hemisphere * Gender",
+      random_effects = "(1 + part + Hemisphere | sub)"
+    )
+  )
+}
+```
+
+
