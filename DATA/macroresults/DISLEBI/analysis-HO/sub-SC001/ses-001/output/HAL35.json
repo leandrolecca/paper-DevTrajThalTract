@@ -1,0 +1,65 @@
+{
+  "volume": [
+    12123.413811683655
+  ],
+  "volume_endpoints": [
+    2435.1440014839172
+  ],
+  "streamlines_count": [
+    2623
+  ],
+  "avg_length": [
+    81.18241119384766
+  ],
+  "std_length": [
+    4.393904685974121
+  ],
+  "min_length": [
+    66.44654846191406
+  ],
+  "max_length": [
+    95.01364135742188
+  ],
+  "span": [
+    37.09133529663086
+  ],
+  "curl": [
+    2.188716328075192
+  ],
+  "diameter": [
+    13.789119994837165
+  ],
+  "elongation": [
+    5.887425102127145
+  ],
+  "surface_area": [
+    7077.480847294443
+  ],
+  "end_surface_area_head": [
+    1046.1239938519159
+  ],
+  "end_surface_area_tail": [
+    1511.067991119434
+  ],
+  "radius_head": [
+    4.819789373467183
+  ],
+  "radius_tail": [
+    5.912699545963572
+  ],
+  "irregularity": [
+    2.0124742539608085
+  ],
+  "irregularity_of_end_surface_head": [
+    0.06976262748857039
+  ],
+  "irregularity_of_end_surface_tail": [
+    0.07268377719054299
+  ],
+  "mean_curvature": [
+    0.3641967678110971
+  ],
+  "fractal_dimension": [
+    2.3146462933227006
+  ]
+}
